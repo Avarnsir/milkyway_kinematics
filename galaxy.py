@@ -2,6 +2,8 @@ from astroquery.gaia import Gaia
 import numpy as np
 import os
 import requests
+import astropy.coordinates as coords
+import astropy.units as u
 
 def get_gaia_sample():
     query = """
@@ -45,3 +47,33 @@ def filter_data(data):
     except Error as e:
         print(error)
     return data[mask]
+
+def full_coordinate_analysis(stars):
+    distance_pc = 1e3 / stars['parallax']
+    coord_icrs = coord.SkyCoord(
+        ra=stars['ra'] * u.deg,
+        dec=stars['dec'] * u.deg,
+        distance=distances_pc * u.pc,
+        pm_ra_cosdec=stars['pmra'] * u.mas/u.yr,
+        pm_dec=stars['pmdec'] * u.mas/u.yr,
+        radial_velocity=stars['dr2_radial_velocity'] * u.km/u.s,
+        frame='icrs'
+    )
+
+    galactic_coords = coord_icrs.galactic
+    
+
+    gc_frame = coord.Galactocentric(
+        galcen_distance=8.5*u.kpc,  # Sun-GC distance
+        galcen_v_sun=[11.1, 244, 7.3]*u.km/u.s,  # Solar motion in x,y,z
+        z_sun=27*u.pc
+    )
+    galactocentric_coords = coord_icrs.transform_to(gc_frame)
+    
+    return {
+        'galactic': galactic_coords,
+        'galactocentric': galactocentric_coords,
+        'l': galactic_coords.l.deg,
+        'b': galactic_coords.b.deg,
+        'dist_kpc': galactic_coords.distance.kpc
+    }
