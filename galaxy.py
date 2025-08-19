@@ -14,14 +14,14 @@ def get_gaia_sample():
         dr2_radial_velocity, dr2_radial_velocity_error,
         phot_g_mean_mag, bp_rp
     FROM gaiadr3.gaia_source 
-    WHERE parallax > 3.0  -- Within ~330 pc
-        AND parallax_over_error > 5  -- Good precision
+    WHERE parallax > 3.0
+        AND parallax_over_error > 5 
         AND pmra IS NOT NULL 
         AND pmdec IS NOT NULL
-        AND pmra_error < 1.0  -- Good proper motion precision
+        AND pmra_error < 1.0
         AND pmdec_error < 1.0
-        AND ABS(b) < 45  -- Avoid galactic poles
-        AND phot_g_mean_mag < 15  -- Bright enough stars
+        AND ABS(b) < 45
+        AND phot_g_mean_mag < 15
     """
 
     job = gaia.launch_job_async(query)
@@ -77,3 +77,25 @@ def full_coordinate_analysis(stars):
         'b': galactic_coords.b.deg,
         'dist_kpc': galactic_coords.distance.kpc
     }
+
+def compute_velocities(galactic_info):
+    # Proper motion components: convert mas/yr to km/s
+    mu_l_cosb = galactic_info['galactic'].pm_l_cosb * u.mas/u.yr
+    mu_b = galactic_info['galactic'].pm_b * u.mas/u.yr
+    distances_kpc = galactic_info['galactic'].distance.kpc
+
+    # Convert proper motions to tangential velocities
+    v_l = (mu_l_cosb.to(u.rad/u.yr) * distances_kpc * u.kpc).to(u.km/u.s)
+    v_b = (mu_b.to(u.rad/u.yr) * distances_kpc * u.kpc).to(u.km/u.s)
+    
+    # Radial velocities
+    v_r = galactic_info['galactic'].radial_velocity
+    
+    # Coordinate rotation matrix or use galpy for orbits
+    # For simplicity, assume velocities are aligned with galactic axes
+    
+    # Compute cylindrical velocities (v_R, v_phi, v_z)
+    # Requires transformation based on position
+    # Placeholder: detailed calculations involve spherical coordinate conversions
+    # Actual implementation uses galpy or custom vector algebra
+    pass
